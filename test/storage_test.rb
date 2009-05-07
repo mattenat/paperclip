@@ -85,6 +85,21 @@ class StorageTest < Test::Unit::TestCase
       assert_match %r{^http://something.something.com/avatars/stringio.txt}, @dummy.avatar.url
     end
   end
+  context "" do
+    setup do
+      rebuild_model :storage => :s3,
+                    :s3_credentials => {}, 
+                    :bucket => "bucket",
+                    :path => ":attachment/:basename.:extension",
+                    :url => ":asset_host"
+      @dummy = Dummy.new
+      @dummy.avatar = StringIO.new(".")
+    end
+
+    should "return a relative URL for Rails to calculate assets host" do
+      assert_match %r{^avatars/stringio.txt}, @dummy.avatar.url
+    end
+  end
 
   context "Parsing S3 credentials with a bucket in them" do
     setup do
