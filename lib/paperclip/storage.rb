@@ -141,7 +141,8 @@ module Paperclip
           @s3_headers     = @options[:s3_headers]     || {}
           @s3_host_alias  = @options[:s3_host_alias]
           @url            = ":s3_path_url" unless @url.to_s.match(/^:s3.*url$/)
-          @url            = ":asset_host" if @options[:url].to_s == ":asset_host"
+          @url            = ":asset_host" if @url.to_s.match(/^:asset_host.*$/)
+          
         end
         base.class.interpolations[:s3_alias_url] = lambda do |attachment, style|
           "#{attachment.s3_protocol}://#{attachment.s3_host_alias}/#{attachment.path(style).gsub(%r{^/}, "")}"
@@ -152,8 +153,11 @@ module Paperclip
         base.class.interpolations[:s3_domain_url] = lambda do |attachment, style|
           "#{attachment.s3_protocol}://#{attachment.bucket_name}.s3.amazonaws.com/#{attachment.path(style).gsub(%r{^/}, "")}"
         end
-        base.class.interpolations[:asset_host] = lambda do |attachment, style|
-          "#{attachment.path(style).gsub(%r{^/}, "")}"
+        base.class.interpolations[:asset_host_s3] = lambda do |attachment, style|
+          "/#{attachment.bucket_name}/#{attachment.path(style).gsub(%r{^/}, "")}"
+        end
+        base.class.interpolations[:asset_host_cloudfront] = lambda do |attachment, style|
+          "/#{attachment.path(style).gsub(%r{^/}, "")}"
         end
       end
 
