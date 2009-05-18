@@ -109,9 +109,9 @@ module Paperclip
     # * +s3_host_alias+: The fully-qualified domain name (FQDN) that is the alias to the
     #   S3 domain of your bucket. Used with the :s3_alias_url url interpolation. See the
     #   link in the +url+ entry for more information about S3 domains and buckets.
-    # * +url+: There are three options for the S3 url. You can choose to have the bucket's name
+    # * +url+: There are five options for the S3 url. You can choose to have the bucket's name
     #   placed domain-style (bucket.s3.amazonaws.com) or path-style (s3.amazonaws.com/bucket).
-    #   Lastly, you can specify a CNAME (which requires the CNAME to be specified as
+    #   You can also specify a CNAME (which requires the CNAME to be specified as
     #   :s3_alias_url. You can read more about CNAMEs and S3 at 
     #   http://docs.amazonwebservices.com/AmazonS3/latest/index.html?VirtualHosting.html
     #   Normally, this won't matter in the slightest and you can leave the default (which is
@@ -120,7 +120,11 @@ module Paperclip
     #   NOTE: If you use a CNAME for use with CloudFront, you can NOT specify https as your
     #   :s3_protocol; This is *not supported* by S3/CloudFront. Finally, when using the host
     #   alias, the :bucket parameter is ignored, as the hostname is used as the bucket name
-    #   by S3.
+    #   by S3. The last two options use Rails' built-in asset_host settings to generate the url.
+    #   :asset_host_s3 will generate a url with bucket, and :asset_host_cloudfront will generate a 
+    #   url without bucket (since cloudfront urls don't use bucket). NOTE: The asset_host options 
+    #   generate a relative url; to get the full absolute url (e.g. to link_to the s3-hosted image), 
+    #   use the image_path  helper. image_path is what image_tag uses to generate the url for an img tag. 
     # * +path+: This is the key under the bucket in which the file will be stored. The
     #   URL will be constructed from the bucket and the path. This is what you will want
     #   to interpolate. Keys should be unique, like filenames, and despite the fact that
@@ -138,7 +142,7 @@ module Paperclip
           @s3_protocol    = @options[:s3_protocol]    || (@s3_permissions == 'public-read' ? 'http' : 'https')
           @s3_headers     = @options[:s3_headers]     || {}
           @s3_host_alias  = @options[:s3_host_alias]
-          @url            = ":s3_path_url" unless @url.to_s.match(/^:s3.*url$/)
+          @url            = ":s3_path_url" unless @url.to_s.match(/^:s3.*url$/) || @url.to_s.match(/^:asset_host.*$/)          
         end
         base.class.interpolations[:s3_alias_url] = lambda do |attachment, style|
           "#{attachment.s3_protocol}://#{attachment.s3_host_alias}/#{attachment.path(style).gsub(%r{^/}, "")}"
@@ -148,6 +152,12 @@ module Paperclip
         end
         base.class.interpolations[:s3_domain_url] = lambda do |attachment, style|
           "#{attachment.s3_protocol}://#{attachment.bucket_name}.s3.amazonaws.com/#{attachment.path(style).gsub(%r{^/}, "")}"
+        end
+        base.class.interpolations[:asset_host_s3] = lambda do |attachment, style|
+          "/#{attachment.bucket_name}/#{attachment.path(style).gsub(%r{^/}, "")}"
+        end
+        base.class.interpolations[:asset_host_cloudfront] = lambda do |attachment, style|
+          "/#{attachment.path(style).gsub(%r{^/}, "")}"
         end
       end
 
